@@ -1,0 +1,52 @@
+name: Altium architecture experiments
+
+on:
+  push:
+    branches:
+      - arch-experiments
+  pull_request:
+    branches:
+      - arch-experiments
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: altium-arch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Fabric and NeoForge artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build all modules
+        run: ./gradlew build --no-daemon
+
+      - name: Upload mod JARs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: altium-arch-${{ github.sha }}
+          path: |
+            build/mods/*.jar
+            fabric/build/libs/*.jar
+            neoforge/build/libs/*.jar
+          if-no-files-found: warn
+          retention-days: 14

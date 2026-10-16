@@ -1,0 +1,46 @@
+ALTIUM — ARCHITECTURE EXPERIMENTS PROGRESS
+Branch: arch-experiments
+Base: CaffeineMC/Sodium tag mc26.2-0.9.2
+Status: switched the experiment baseline to Minecraft 26.2 source; CI validation in progress.
+Last updated: 2026-10-15
+
+PURPOSE
+Use this branch for isolated renderer/performance experiments described in
+Arch/ARCHITECTURE.txt. The dev branch is not the experiment branch.
+
+BASELINE DECISION
+- Minecraft target: 26.2 only. Do not port to 26.3 unless explicitly requested.
+- Source baseline: upstream Sodium mc26.2-0.9.2, chosen to avoid 26.3 renderer/API changes.
+- Loader artifacts: Fabric and NeoForge; verify both build and launch.
+- Build config uses Fabric Loader 0.19.3, Fabric API 0.161.0+26.2, and NeoForge 26.2.0.88.
+- Language: Java. No JNI/Rust native renderer in this project.
+- Branding and Arch documentation are layered onto the 26.2 source baseline.
+
+CHECKPOINTS
+- [x] Read Arch/ARCHITECTURE.txt.
+- [x] Create arch-experiments as an isolated test branch.
+- [x] Add branch-specific CI build workflow and Gradle caching.
+- [x] Rebase experiment baseline to upstream Sodium mc26.2-0.9.2.
+- [x] Pin Minecraft and loader dependency configuration to 26.2-compatible versions.
+- [ ] Confirm CI succeeds and downloadable artifacts exist.
+- [ ] Launch-test on Fabric 26.2.
+- [ ] Launch-test NeoForge 26.2 if supported by the build.
+- [ ] Record a repeatable stock baseline on the Dell Latitude E5430.
+- [ ] Add low-overhead instrumentation before renderer rewrites.
+
+EXPERIMENT ORDER
+1. Thread contention / worker sizing on low-core CPUs.
+2. Rebuild scheduling under frame-time pressure.
+3. Meshing allocation pressure.
+4. Memory profile, then other renderer targets guided by measurements.
+
+WORKING RULES
+1. One experiment per commit or small series of commits.
+2. Measure before and after using the same world, route, settings, warm-up, and sample length.
+3. Track average and p95/p99 frame times, chunk-loading stutter, memory, and GC where practical.
+4. Keep risky behavior behind a configuration toggle where feasible.
+5. Preserve upstream license notices and third-party attribution.
+6. CI success proves compilation/packaging only, not in-game correctness or a performance win.
+
+RESULTS
+No performance measurements have been recorded on this branch yet.
