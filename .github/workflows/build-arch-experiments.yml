@@ -36,7 +36,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
-      - name: Build all modules
+      - name: Build Fabric mod
         run: ./gradlew :fabric:build --no-daemon
 
       - name: Upload mod JARs
@@ -45,6 +45,7 @@ jobs:
         with:
           name: altium-fabric-${{ github.sha }}
           path: |
+            build/mods/*.jar
             fabric/build/libs/*.jar
           if-no-files-found: warn
           retention-days: 14

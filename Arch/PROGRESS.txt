@@ -1,7 +1,7 @@
 ALTIUM — ARCHITECTURE EXPERIMENTS PROGRESS
 Branch: arch-experiments
 Base: CaffeineMC/Sodium tag mc26.2-0.9.2
-Status: Fabric-only Altium 26.2 baseline runs in-game; branding and independent versioning are being applied.
+Status: Altium branding and independent versioning committed; current low-core worker-priority experiment is awaiting CI and A/B testing.
 Last updated: 2026-10-15
 
 PURPOSE
@@ -23,8 +23,10 @@ CHECKPOINTS
 - [x] Add branch-specific CI build workflow and Gradle caching.
 - [x] Rebase experiment baseline to upstream Sodium mc26.2-0.9.2.
 - [x] Pin Minecraft and loader dependency configuration to 26.2-compatible versions.
-- [x] Confirm Fabric CI succeeds and downloadable artifact exists.
-- [x] Launch-tested Fabric 26.2: 6-chunk walking test loads chunks quickly, with slight visible delay.
+- [x] Confirm Fabric compilation succeeds after branding changes.
+- [ ] Confirm corrected CI artifact upload produces a downloadable Altium JAR.
+- [x] Launch-tested the pre-branding Fabric 26.2 baseline: 6-chunk walking loads quickly, with slight visible delay.
+- [ ] Launch-test the branded Altium JAR and verify manager name/version.
 - [ ] Record a repeatable stock baseline on the Dell Latitude E5430.
 - [ ] Add low-overhead instrumentation before renderer rewrites.
 
@@ -44,4 +46,4 @@ WORKING RULES
 6. CI success proves compilation/packaging only, not in-game correctness or a performance win.
 
 RESULTS
-Initial qualitative baseline: render distance 6; chunks load quickly while walking, with slight delay. User also observed fast loading at one chunk-builder thread. Repeatable FPS/frame-time measurements are still pending.
+Initial qualitative baseline (pre-branding): render distance 6; chunks load quickly while walking, with slight delay. User also observed fast loading at one chunk-builder thread. The priority experiment is unvalidated; compare identical route/settings and revert if frame pacing worsens. Repeatable FPS/frame-time measurements are still pending.
