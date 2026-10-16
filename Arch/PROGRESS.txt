@@ -1,7 +1,7 @@
 ALTIUM — ARCHITECTURE EXPERIMENTS PROGRESS
 Branch: arch-experiments
 Base: CaffeineMC/Sodium tag mc26.2-0.9.2
-Status: switched the experiment baseline to Minecraft 26.2 source; fresh CI validation triggered.
+Status: Minecraft 26.2 source baseline committed; latest branch-head CI build queued.
 Last updated: 2026-10-15
 
 PURPOSE
