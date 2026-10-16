@@ -17,9 +17,12 @@ GOALS
   - Start from Sodium's proven renderer and improve SPECIFIC areas where
     measurements show there is room.
   - Every change backed by a number (frame time, memory, stutter), not a hunch.
-  - PRIMARY FOCUS: make Sodium behave better on LOW-CORE-COUNT CPUs (2 cores /
-    4 threads and similar), where render thread, worker threads, the game's
-    server thread, GC and the driver all fight for very few cores.
+  - PRIMARY FOCUS: improve the renderer and chunk delivery on LOW-CORE-COUNT
+    CPUs (2 cores / 4 threads and similar), where render, worker, server, GC,
+    and driver threads compete for limited CPU time.
+  - Keep Altium renderer changes focused on rendering, mesh scheduling,
+    submission, memory, and frame pacing. Do not turn this repository into a
+    general-purpose vanilla tick/world-generation optimization project.
 
 NON-GOALS
   - Beating Sodium overall. It is already heavily optimized; that is not the
@@ -250,7 +253,11 @@ result in the DECISION LOG either way.
   - Strategy: fork Sodium and rewrite selected areas instead of writing a
     renderer from scratch. Not trying to beat Sodium overall.
   - Base: current Sodium, PolyForm Shield 1.0.0 (confirmed from the repo).
-  - Focus: optimize for low-core-count CPUs (T2, T8, T9 first).
+  - Focus: optimize renderer behavior and chunk delivery for low-core-count CPUs.
+  - Scope boundary: vanilla game-logic/tick optimization is a separate project;
+    a future Lithium-based fork may investigate that independently. Altium may
+    still measure integrated-server tick impact to catch regressions, but should
+    not absorb Lithium-style gameplay optimizations.
   - OPEN: distribution plan given the Shield noncompete (section 2): private,
     upstream PRs, ask CaffeineMC, or research/diffs only.
   - OPEN: confirm GL capabilities of the reference machine's driver (T6).
