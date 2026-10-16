@@ -2,8 +2,9 @@
  MINECRAFT PERFORMANCE MOD - ARCHITECTURE
  Fabric / Minecraft 26.2 / OpenGL / Pure Java (no JNI, no Rust)
 ================================================================================
- Status: v0.1 draft. This file is the source of truth. Edit it as decisions
- change, and add a line to the DECISION LOG (section 12) every time you do.
+ Status: v0.2. Target source baseline is CaffeineMC/Sodium mc26.2-0.9.2.
+ This file is the source of truth. Update it as decisions change, and add a
+ line to the DECISION LOG (section 12) for significant architecture decisions.
 ================================================================================
 
 
@@ -73,13 +74,13 @@ result in the DECISION LOG either way.
 --------------------------------------------------------------------------------
   - Fork upstream on GitHub. Keep an `upstream` remote and a clean `upstream-sync`
     branch that only ever fast-forwards to upstream tags.
-  - All of your work lives on `main` as SMALL, SEPARATE changes (one rewrite area
-    per branch/PR). This keeps rebasing onto new upstream releases survivable.
-  - Prefer ADDING new classes and swapping them in at a few seams over editing
+  - `dev` is not the experiment branch. Work on `arch-experiments` and keep
+    each optimization isolated in a small commit or a short-lived experiment branch.
+  - Prefer adding new classes and swapping them in at a few seams over editing
     many upstream files. Fewer touched lines = fewer merge conflicts.
-  - Feature flags: every rewrite sits behind a config toggle so you can A/B it
-    against stock behavior in the same build.
-  - Tag each experiment: exp/<area>-<short-name>.
+  - Feature flags: risky renderer changes should be configurable so they can be
+    A/B tested against stock behavior in the same build where practical.
+  - Do not port to Minecraft 26.3 unless explicitly requested; 26.2 is the target.
 
 
 4. HIGH-LEVEL PIPELINE (as it exists in Sodium, conceptually)
@@ -109,23 +110,20 @@ result in the DECISION LOG either way.
 
 5. MODULE MAP (VERIFY NAMES AGAINST THE TAG YOU FORK)
 --------------------------------------------------------------------------------
-  Names below are from memory of Sodium's layout and may differ in your version.
-  First task of Phase 0: confirm each one by reading the source, and fix this
-  table.
+  The following paths were verified against the mc26.2-0.9.2 source baseline.
 
-  Area                     Responsibility                       Likely location
-  -----------------------  -----------------------------------  ---------------
-  Section manager          owns sections, dirty state, frame    render/chunk/
-                           update loop                          RenderSectionManager
-  Build scheduler/executor worker pool, task queue, priorities  render/chunk/compile/executor
-  Meshing task             snapshot -> mesh for one section     render/chunk/compile/tasks
-  Block/fluid mesher       per-block face emission, AO, light   render/chunk/compile/pipeline
-  Vertex format            packed vertex layout                 render/chunk/vertex
-  Occlusion culler         visibility graph / frustum culling   render/chunk/occlusion
-  Region + arenas          GPU buffer storage per region        render/chunk/region, util/arena
-  Draw lists               ordered sections per pass            render/chunk/lists
-  Translucency sorting     sorting for transparent geometry     render/chunk/translucent_sorting
-  Config / options         toggles, video settings              gui/ and config/
+  Area                     Responsibility                       Verified source path
+  -----------------------  -----------------------------------  --------------------
+  Section manager          dirty state, visibility, frame loop  render/chunk/RenderSectionManager.java
+  Worker scheduler         worker pool, job queue, priorities   render/chunk/compile/executor/ChunkBuilder.java
+  Meshing task             snapshot -> mesh one section         render/chunk/compile/tasks/ChunkBuilderMeshingTask.java
+  Block/fluid mesher       per-block face emission, AO, light   render/chunk/compile/pipeline/
+  Vertex format            packed vertex layout                 render/chunk/vertex/format/
+  Occlusion culler         visibility graph / traversal        render/chunk/occlusion/
+  Region + arenas          GPU buffer storage                  render/chunk/region/ and buffer allocator classes
+  Draw lists               ordered visible sections             render/chunk/lists/
+  Translucency sorting     transparent geometry sorting        render/chunk/translucent_sorting/
+  Config / options         video settings and toggles           client/gui/ and client/config/
 
 
 6. REWRITE TARGETS (HYPOTHESES TO TEST, NOT PROMISES)
@@ -268,36 +266,56 @@ result in the DECISION LOG either way.
   - Gains may be small. That is acceptable; the measured result is the output.
 ================================================================================
 
-Ps: Add these if applicable
+14. ADDITIONAL FEATURE CANDIDATES (NOT YET IMPLEMENTED)
+--------------------------------------------------------------------------------
+These ideas are part of the wishlist, not promised features. They must be
+checked against the 26.2 renderer, driver capabilities, visual correctness, and
+benchmarks before implementation. Avoid duplicating work Sodium already does.
 
-1. Hardware Upscaling: Integrated FSR 1 Support
-• Ensure your FSR shader pass triggers after the 3D world is drawn but before the text, crosshair, and inventory menus (HUD) are rendered.
-• Scaling the font and HUD elements with FSR 1 will make text illegible and blocky at lower resolutions. Keep the HUD rendering at your native screen resolution.
+F1. World-only upscaling (FSR 1-style)
+    Render the 3D world at a lower internal resolution and upscale before the
+    native-resolution HUD, text, crosshair, and menus are drawn. Keep UI crisp.
+    First investigate the 26.2 render pipeline and backend boundary. OpenGL and
+    Vulkan may require separate paths; do not break the default backend.
+    Measure GPU time and frame pacing at 720p/900p output and several render
+    scales. This is a GPU-bound experiment and may not help CPU-bound scenes.
 
-2. Optimized Chunk Pipelines: Direct buffer streams, vertex compression, and fast mesh upload
+F2. Draw submission / multi-draw audit
+    Verify the 26.2 renderer's existing batching before adding anything. The
+    HD 4000 exposes OpenGL 4.2 on the target setup, so do not assume OpenGL 4.3
+    multi-draw-indirect support. Prefer existing CPU-prepared multi-draw paths
+    and add a capability-checked fallback only if profiling shows submission
+    overhead is material. Never introduce a slow path on legacy drivers.
 
+F3. Entity and particle batching
+    Investigate whether entity/item/particle submission is a significant cost
+    outside the chunk renderer. Compare with existing ecosystem batching mods
+    before attempting a custom VertexConsumer rewrite. Treat mod compatibility
+    and render-state correctness as major constraints; use a feature flag and
+    test armor layers, held items, particles, block entities, and transparency.
 
+F4. Conservative internal-face culling for leaves
+    Investigate removing faces fully enclosed by neighboring leaf blocks during
+    mesh extraction. Preserve vanilla visual semantics and account for different
+    leaf types, resource packs, modded blocks, and fancy/fast graphics settings.
+    Start with a narrowly defined, opt-in rule; compare vertex counts and GPU
+    time, and test edge cases for light, transparency, and gaps between leaves.
 
-3. Multi-Draw Indirect (MDI) Fallbacks
+F5. Texture mip bias
+    Do not hardcode a negative mip bias as a presumed optimization. It can cause
+    aliasing/shimmering and does not guarantee lower GPU cost. Only prototype it
+    as a user-configurable visual-quality experiment if profiling demonstrates
+    texture sampling is a bottleneck. Compare GPU time and image quality.
 
-Sodium batches draw calls natively, but you can go a step further depending on how you build your buffer streams.
-• The Optimization: Check if Mesa allows your HD 4000 to cleanly execute glMultiDrawElementsBaseVertex. While full hardware Indirect culling is a bad idea (as discussed), batching multiple chunks into a singular Multi-Draw call via a pre-calculated index buffer on the CPU is highly efficient.
-• Why it helps HD 4000: It completely removes the OpenGL API execution overhead. Rather than looping 100 times to draw 100 chunks, you feed the Mesa driver one multi-draw array pointer.
+F6. Frame-time instrumentation
+    The 26.2 Sodium baseline already exposes renderer details in the F3 debug
+    group, including worker scheduled/busy/total counts, busy fraction, buffer
+    pool use, async culling state, and culling duration. Use this first instead
+    of creating a second overlay. Add new counters only where the existing debug
+    output cannot answer a specific profiling question.
 
-4. Immediate / Geometry Batched Entity Rendering
-
-Standard entities (mobs, items on the ground, players) bypass Sodium's standard chunk pipelines and use standard immediate rendering templates.
-• The Optimization: Look at how the mod ImmediatelyFast operates. You can rewrite the VertexConsumer interface inside your Sodium fork to buffer and batch all non-chunk geometry (mobs, armor layers, particles) into unified arrays, processing them in massive, single-pass draw commands.
-• Why it helps HD 4000: The HD 4000 hates pipeline state changes. Force-batching entities keeps the GPU in a continuous execution loop, minimizing stalls.
-
-5. Smart Leaf / Geometry Topology Culling
-
-Sodium has excellent chunk occlusion culling, but it doesn't modify block face topology logic within the chunk builder itself.
-• The Optimization: Write an engine-level rule into your chunk mesh compiler for translucent or "Fancy" blocks (like Leaves). If a leaf block is entirely enclosed by other leaf blocks, skip generating its internal faces entirely (similar to what Cull Leaves or Smart Leaves do natively, but executed directly during Sodium's geometry extraction phase).
-• Why it helps HD 4000: It cuts down the raw vertex count traveling over your slow system RAM bus before the data ever reaches the GPU.
-
-6. Fragment Shader Micro-Optimizations (Mipmap Bias Tuning)
-
-Standard Sodium uses a generic texture sampling profile. On legacy Intel execution units, texture sampling over large distances can trigger heavy texture cache misses.
-• The Optimization: Inside your custom shader injects, hardcode a slight negative Mipmap LOD bias (e.g., -0.5).
-• Why it helps HD 4000: It subtly forces the GPU to choose lower-resolution texture mipmaps slightly closer to the camera player, drastically reducing texture bandwidth demands on your shared system memory.
+IMPLEMENTATION RULE
+    Do not implement all wishlist items together. Establish the baseline first,
+    select one measurable bottleneck, then make one reversible change and test
+    correctness, compatibility, frame-time distribution, and memory use.
+================================================================================
