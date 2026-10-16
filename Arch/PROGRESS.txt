@@ -47,3 +47,31 @@ WORKING RULES
 
 RESULTS
 Initial qualitative baseline (pre-branding): render distance 6; chunks load quickly while walking, with slight delay. User also observed fast loading at one chunk-builder thread. The priority experiment is unvalidated; compare identical route/settings and revert if frame pacing worsens. Repeatable FPS/frame-time measurements are still pending.
+
+NEW PERFORMANCE OBSERVATION (USER-REPORTED, 2026-10-16)
+- During village generation/chunk exploration, CPU usage can reach 100% and the
+  reported tick/frame interval rises to roughly 20-30 ms.
+- Once chunk generation stops, CPU usage falls to about 20-30% and the reported
+  interval falls to about 13 ms.
+- User also reported a 20-30% chunk-generation speed increase in some scenarios
+  after correcting a chunk-loading configuration (they had selected "SOON"
+  rather than deferred chunk loading). This is not yet an isolated renderer
+  benchmark; do not attribute the whole gain to the worker-priority experiment.
+- Interpretation: likely CPU contention between Minecraft world generation /
+  integrated-server work and Altium chunk meshing, plus possible main-thread
+  upload pressure. The observation alone does not prove which subsystem dominates.
+
+NEXT INVESTIGATION
+1. Keep the now-correct chunk-loading configuration fixed for all comparisons.
+2. Capture the in-game chunk-builder debug values during a village-generation
+   spike: scheduled jobs, busy workers, worker count, N0/N1/deferred task counts,
+   received results, mesh duration estimates, and upload estimates.
+3. Compare the same village route with generation active and after the area is
+   fully loaded. Record whether the 20-30 ms figure is frame time, integrated
+   server tick time, or both; record p95/p99 if available.
+4. First candidate code experiment is frame-pressure-aware chunk rebuild
+   scheduling (ARCHITECTURE T9), behind a reversible option if feasible. Do not
+   blindly add worker threads or raise priorities further on the 2c/4t reference
+   CPU. Test whether reducing rebuild throughput under frame pressure improves
+   tick/frame pacing without making nearby chunks appear too late.
+
