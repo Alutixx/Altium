@@ -49,10 +49,10 @@ RESULTS
 Initial qualitative baseline (pre-branding): render distance 6; chunks load quickly while walking, with slight delay. User also observed fast loading at one chunk-builder thread. The priority experiment is unvalidated; compare identical route/settings and revert if frame pacing worsens. Repeatable FPS/frame-time measurements are still pending.
 
 NEW PERFORMANCE OBSERVATION (USER-REPORTED, 2026-10-16)
-- During village generation/chunk exploration, CPU usage can reach 100% and the
-  reported tick/frame interval rises to roughly 20-30 ms.
-- Once chunk generation stops, CPU usage falls to about 20-30% and the reported
-  interval falls to about 13 ms.
+- During village generation/chunk exploration, CPU usage can reach 100% and
+  measured Minecraft tick time rises to roughly 20-30 ms.
+- Once chunk generation stops, CPU usage falls to about 20-30% and measured
+  Minecraft tick time falls to about 13 ms. These are tick timings, not frame times.
 - User also reported a 20-30% chunk-generation speed increase in some scenarios
   after correcting a chunk-loading configuration (they had selected "SOON"
   rather than deferred chunk loading). This is not yet an isolated renderer
@@ -69,9 +69,12 @@ NEXT INVESTIGATION
 3. Compare the same village route with generation active and after the area is
    fully loaded. Record whether the 20-30 ms figure is frame time, integrated
    server tick time, or both; record p95/p99 if available.
-4. First candidate code experiment is frame-pressure-aware chunk rebuild
-   scheduling (ARCHITECTURE T9), behind a reversible option if feasible. Do not
-   blindly add worker threads or raise priorities further on the 2c/4t reference
-   CPU. Test whether reducing rebuild throughput under frame pressure improves
-   tick/frame pacing without making nearby chunks appear too late.
+4. Do not treat this as a pure frame-time issue: first profile integrated-server
+   tick time during village generation. Separate vanilla worldgen/structure-feature
+   work from renderer meshing contention using comparable runs and a profiler.
+5. Only if profiling shows chunk meshing starves tick-critical threads, test a
+   reversible cap/adaptive throttle for background mesh work. Preserve near-camera
+   chunk priority and verify it does not merely shift the delay into slower chunk
+   appearance. Do not blindly add worker threads or raise priorities further on
+   the 2c/4t reference CPU.
 
