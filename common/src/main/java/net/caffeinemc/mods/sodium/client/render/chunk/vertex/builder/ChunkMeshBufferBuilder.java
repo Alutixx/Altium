@@ -73,7 +73,12 @@ public class ChunkMeshBufferBuilder {
         this.vertexCount = 0;
         this.sectionIndex = sectionIndex;
 
-        this.reallocate(this.initialCapacity);
+        // Keep the scratch allocation between chunk builds. Reallocating to the
+        // initial capacity here discarded any larger buffer retained from a
+        // previous section, forcing native free/realloc churn on every build.
+        if (this.buffer == null) {
+            this.reallocate(this.initialCapacity);
+        }
     }
 
     public void destroy() {
