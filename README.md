@@ -1,99 +1,67 @@
-<img src="common/src/main/resources/sodium-icon.png" width="128">
+<p align="center">
+  <img src="Icon-762x_128x128.png" width="128" alt="Altium icon">
+</p>
 
-# Sodium
+<h1 align="center">Altium</h1>
 
-Sodium is a powerful rendering engine and optimization mod for the Minecraft client which improves frame rates and reduces
-micro-stutter, while fixing many graphical issues in Minecraft.
+<p align="center">
+  A Sodium-based Minecraft rendering and performance project focused on making gameplay smoother on older and lower-end hardware.
+</p>
 
-**This mod is the result of thousands of hours of development, and is made possible thanks to players like you.** If you
-would like to show a token of your appreciation for my work, and help support the development of Sodium in the process,
-then consider [buying me a coffee](https://caffeinemc.net/donate).
+> [!WARNING]
+> **AI-assisted project:** AI tools are used to help with development, research, and code changes. Changes are reviewed and tested where possible, but AI assistance does not guarantee correctness. Please report bugs and regressions through the issue tracker.
 
-<a href="https://caffeinemc.net/donate"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" width="180"/></a>
+## 🎯 Project goals
 
----
+Altium is a fork of [Sodium](https://github.com/CaffeineMC/sodium), the Minecraft rendering optimization mod. The goal is to explore practical rendering and performance improvements, with particular interest in older CPUs and graphics hardware such as Intel HD Graphics 4000.
 
-### 📥 Downloads
+Areas of interest include:
 
-#### Stable builds
+- Reducing CPU overhead and unnecessary work in the rendering path.
+- Improving frame pacing and reducing stutter, not just increasing average FPS.
+- Keeping changes measurable and maintainable against upstream Sodium.
+- Testing compatibility on older hardware and drivers where feasible.
 
-The latest stable release of Sodium can be downloaded from our official [Modrinth](https://modrinth.com/mod/sodium) and
-[CurseForge](https://www.curseforge.com/minecraft/mc-mods/sodium) pages.
+These are development goals, not a promise that every system will see better performance. Results will vary by Minecraft version, mods, drivers, settings, and hardware.
 
-#### Nightly builds (for developers)
+## 📌 Project status
 
-We also provide bleeding-edge builds ("nightlies") which are useful for testing the very latest changes before they're
-packaged into a release. These builds are primarily intended for other mod developers and users with expert skills, and do
-not come with any support or warranty.
+Altium is an actively modified fork. Performance changes should be considered experimental unless they are specifically documented and tested. No benchmark or compatibility claim is made here without published test results.
 
-For a complete listing of available nightly builds, please see [the wiki page](https://github.com/CaffeineMC/sodium/wiki/Nightly-Builds). We also have a Maven repository for including Sodium in your development workspace or build process, for which you can also find [documentation on our wiki](https://github.com/CaffeineMC/sodium/wiki/CaffeineMC-Maven-&-Config-API).
+## 📥 Downloads
 
-### 🖥️ Installation
+Check the repository's [Releases](https://github.com/Alutixx/Altium/releases) for published builds. If there is no release for your Minecraft version or mod loader, a compatible build may not be available yet.
 
-Since the release of Sodium 0.6.0, both the _Fabric_ and _NeoForge_ mod loaders are supported. We generally recommend
-that new users prefer to use the _Fabric_ mod loader, since it is more lightweight and stable (for the time being.)
+## 🖥️ Installation
 
-For more information about downloading and installing the mod, please refer to our [Installation Guide](https://github.com/CaffeineMC/sodium/wiki/Installation).
+1. Install a Minecraft mod loader and Minecraft version supported by the specific Altium build.
+2. Download the matching Altium release.
+3. Place the mod JAR in your instance's `mods` directory.
+4. Launch the game and check the log if it fails to load.
 
-### 🙇 Getting Help
+Do not assume a build supports every Minecraft version or both Fabric and NeoForge; check the release notes and included metadata.
 
-For technical support (including help with mod installation problems and game crashes), please use our
-[official Discord server](https://caffeinemc.net/discord).
+## 🐛 Issues and feedback
 
-### 📬 Reporting Issues
+Please use the [GitHub issue tracker](https://github.com/Alutixx/Altium/issues) to report bugs, crashes, compatibility problems, or reproducible performance regressions.
 
-If you do not need technical support and would like to report an issue (bug, crash, etc.) or otherwise request changes
-(for mod compatibility, new features, etc.), then we encourage you to open an issue on the
-[project issue tracker](https://github.com/CaffeineMC/sodium/issues).
+When reporting a performance issue, include your Minecraft version, mod loader, Java version, CPU and GPU, graphics driver, relevant mods, settings, and steps to reproduce the problem. Benchmark results are most useful when the test setup and method are included.
 
-Please note that while the issue tracker is open to feature requests, development is primarily focused on
-improving compatibility, performance, and finishing any unimplemented features necessary for parity with
-the vanilla renderer.
+## 🛠️ Building from source
 
-### 💬 Join the Community
+Altium uses Gradle. With a compatible JDK installed, run:
 
-We have an [official Discord community](https://caffeinemc.net/discord) for all of our projects. By joining, you can:
-- Get installation help and technical support for all of our mods
-- Get the latest updates about development and community events
-- Talk with and collaborate with the rest of our team
-- ... and just hang out with the rest of our community.
+```bash
+./gradlew build
+```
 
-## ✅ Hardware Compatibility
+On Windows, use `gradlew.bat build`. Build artifacts are produced in the project's Gradle build output directories.
 
-We only provide official support for graphics cards which have up-to-date drivers that are compatible with OpenGL 4.5
-or newer. Most graphics cards released in the past 12 years will meet these requirements, including the following:
+Check the Gradle wrapper configuration and project build files for the exact Java and Gradle requirements for the current branch.
 
-- AMD Radeon HD 7000 Series (GCN 1) or newer
-- NVIDIA GeForce 400 Series (Fermi) or newer
-- Intel HD Graphics 500 Series (Skylake) or newer
+## 🙏 Upstream
 
-Nearly all graphics cards that are already compatible with Minecraft (which requires OpenGL 3.3) should also work
-with Sodium. But our team cannot ensure compatibility or provide support for older graphics cards, and they may
-not work with future versions of Sodium.
-
-#### OpenGL Compatibility Layers
-
-Devices which need to use OpenGL translation layers (such as GL4ES, ANGLE, etc.) are not supported and will very likely
-not work with Sodium. These translation layers do not implement required functionality, and they suffer from underlying
-driver bugs which cannot be worked around.
-
-## 🛠️ Building from sources
-
-Sodium uses the [Gradle build tool](https://gradle.org/) and can be built with the `gradle build` command. The build
-artifacts (production binaries and their source bundles) can be found in the `build/mods` directory.
-
-The [Gradle wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html#sec:using_wrapper) is provided for ease of use and will automatically download and install the
-appropriate version of Gradle for the project build. To use the Gradle wrapper, substitute `gradle` in build commands
-with `./gradlew.bat` (Windows) or `./gradlew` (macOS and Linux).
-
-### Build Requirements
-
-- OpenJDK 21
-    - We recommend using the [Eclipse Temurin](https://adoptium.net/) distribution as it's regularly tested by our developers and known
-      to be of high quality.
-- Gradle 8.10.x
-    - Typically, newer versions of Gradle will work without issues, but the build script is only tested against the
-      version used by the [wrapper script](/gradle/wrapper/gradle-wrapper.properties).
+Altium is based on [Sodium by CaffeineMC](https://github.com/CaffeineMC/sodium). Thanks to the Sodium contributors and the wider Minecraft modding community for their work. Altium is an independent fork and is not an official CaffeineMC project.
 
 ## 📜 License
 
