@@ -6,7 +6,7 @@ plugins {
 }
 
 base {
-    archivesName = "sodium-common"
+    archivesName = "altium-common"
 }
 
 val configurationPreLaunch = configurations.create("preLaunchDeps") {
