@@ -33,7 +33,7 @@ CHECKPOINTS
 - [ ] Add low-overhead instrumentation before renderer rewrites.
 
 EXPERIMENT ORDER
-1. Audit remaining renderer hot paths and existing counters before changing behavior; choose one optimization with a measurable hypothesis.
+1. [x] Reuse native chunk-mesh scratch buffers across builds instead of reallocating every buffer back to its initial capacity at the start of every section build. Commit: 7a28a4b. Validate compilation and measure allocation/GC behavior plus chunk-build throughput.
 2. Low-core worker priority experiment: on systems with <=4 logical processors, raise chunk-worker priority one level (NORM-2 -> NORM-1). Hypothesis: slightly reduce chunk completion delay; risk: increased CPU contention. Not validated until A/B testing.
 3. Thread contention / worker sizing on low-core CPUs, balancing chunk delivery against render responsiveness.
 4. Rebuild scheduling under frame-time pressure, preserving near-camera priority.
@@ -55,6 +55,19 @@ WORKING RULES
 4. Keep risky behavior behind a configuration toggle where feasible.
 5. Preserve upstream license notices and third-party attribution.
 6. CI success proves compilation/packaging only, not in-game correctness or a performance win.
+
+OPTIMIZATION EXPERIMENT 1 — SCRATCH BUFFER REUSE (2026-10-16)
+- ChunkMeshBufferBuilder.start() previously called reallocate(initialCapacity) on every start,
+  even when a native buffer already existed and had grown for a larger section.
+- This contradicted the class-level policy that scratch buffers should not shrink and
+  could cause repeated native reallocations across successive chunk builds.
+- Changed start() to allocate the initial buffer only when buffer == null. Existing
+  capacity, including any grown capacity, is retained for reuse by subsequent builds.
+- Expected benefit: less native allocator churn and fewer large-buffer copies during
+  chunk generation. This is a hypothesis, not a measured performance claim.
+- Trade-off: peak scratch memory may remain higher after unusually large meshes; each
+  worker already retains its scratch buffers, so compare memory as well as throughput.
+- Commit: 7a28a4bbb401af7122c56f3bfa74c13618ca969d.
 
 RESULTS
 Initial qualitative baseline (pre-branding): render distance 6; chunks load quickly while walking, with slight delay. User also observed fast loading at one chunk-builder thread. The priority experiment is unvalidated; compare identical route/settings and revert if frame pacing worsens. Repeatable FPS/frame-time measurements are still pending.
