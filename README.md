@@ -13,7 +13,7 @@
 
 ## 🎯 Project goals
 
-Altium is a fork of [Sodium](https://github.com/CaffeineMC/sodium), the Minecraft rendering optimization mod. The goal is to explore practical rendering and performance improvements, with particular interest in older CPUs and graphics hardware such as Intel HD Graphics 4000.
+Altium is a fork of [Sodium](https://github.com/CaffeineMC/sodium), the Minecraft rendering optimization mod. The goal is to explore practical rendering and performance improvements, with particular interest in older CPUs and graphics.
 
 Areas of interest include:
 
