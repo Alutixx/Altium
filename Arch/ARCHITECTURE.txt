@@ -1,0 +1,303 @@
+================================================================================
+ MINECRAFT PERFORMANCE MOD - ARCHITECTURE
+ Fabric / Minecraft 26.2 / OpenGL / Pure Java (no JNI, no Rust)
+================================================================================
+ Status: v0.1 draft. This file is the source of truth. Edit it as decisions
+ change, and add a line to the DECISION LOG (section 12) every time you do.
+================================================================================
+
+
+1. GOALS AND NON-GOALS
+--------------------------------------------------------------------------------
+GOALS
+  - A fun, educational performance mod for low-end hardware
+    (reference machine: Dell Latitude E5430, i5-3210M 2c/4t, Intel HD 4000,
+    4 GB RAM, Mesa on Linux).
+  - Start from Sodium's proven renderer and improve SPECIFIC areas where
+    measurements show there is room.
+  - Every change backed by a number (frame time, memory, stutter), not a hunch.
+  - PRIMARY FOCUS: make Sodium behave better on LOW-CORE-COUNT CPUs (2 cores /
+    4 threads and similar), where render thread, worker threads, the game's
+    server thread, GC and the driver all fight for very few cores.
+
+NON-GOALS
+  - Beating Sodium overall. It is already heavily optimized; that is not the
+    target.
+  - Native code (Rust/Zig/C via JNI). Dropped: boundary cost and debugging pain
+    outweigh the gains for this project.
+  - Shader pack support, or compatibility with every other mod, in v1.
+
+It is fine if some ideas turn out to be impossible or not worth it. Record the
+result in the DECISION LOG either way.
+
+
+2. LICENSE CHECK (DO THIS BEFORE FORKING)
+--------------------------------------------------------------------------------
+  - Current upstream Sodium (CaffeineMC/sodium) is published under the
+    PolyForm Shield 1.0.0 license. Older Sodium (0.5.x and earlier) was
+    LGPL-3.0, and forks like Embeddium are based on that older code.
+  - These licenses have different rules (Shield restricts using the software to
+    provide a product that competes with it). Read the LICENSE file in the exact
+    tag you fork, and decide which base is acceptable for your goals.
+  - Keep upstream license files, copyright notices and credits intact in the
+    fork.
+  - This is not legal advice.
+
+  DECIDED: base = current Sodium, licensed PolyForm Shield 1.0.0.
+
+  What Shield allows (summary, read the real text):
+    - You may use it, make changes and new works, and distribute copies
+      (including your modified version), for any "permitted purpose".
+    - The one big carve-out is the Noncompete: a permitted purpose is anything
+      EXCEPT providing a product that competes with Sodium, or a product the
+      licensor provides using Sodium.
+    - You must pass the license terms/notices along with any copy you distribute.
+
+  What that means for this project:
+    - Private use, learning, benchmarking, experiments: fine.
+    - Public release of a full Sodium replacement is the gray zone. A "Sodium
+      tuned for low-core CPUs" does the same job as Sodium, so it may count as
+      competing. Whether it does is for the license text (and the licensor) to
+      say, not for us to guess.
+    - SAFER PATHS if you want to share the work:
+        (a) Contribute the low-core improvements upstream to CaffeineMC as PRs.
+        (b) Ask CaffeineMC for permission before publishing a fork.
+        (c) Publish only the research: benchmarks, write-ups, patches/diffs,
+            not a packaged competing mod.
+    - Public forks of current Sodium do exist, but their existence is not
+      permission. Do not treat them as precedent.
+  Not legal advice.
+
+
+3. REPOSITORY STRATEGY
+--------------------------------------------------------------------------------
+  - Fork upstream on GitHub. Keep an `upstream` remote and a clean `upstream-sync`
+    branch that only ever fast-forwards to upstream tags.
+  - All of your work lives on `main` as SMALL, SEPARATE changes (one rewrite area
+    per branch/PR). This keeps rebasing onto new upstream releases survivable.
+  - Prefer ADDING new classes and swapping them in at a few seams over editing
+    many upstream files. Fewer touched lines = fewer merge conflicts.
+  - Feature flags: every rewrite sits behind a config toggle so you can A/B it
+    against stock behavior in the same build.
+  - Tag each experiment: exp/<area>-<short-name>.
+
+
+4. HIGH-LEVEL PIPELINE (as it exists in Sodium, conceptually)
+--------------------------------------------------------------------------------
+
+   world change
+        |
+        v
+   [Section dirty tracking] -> [Rebuild scheduler] -> [Worker threads]
+                                                         |  snapshot of section
+                                                         |  + neighbors, mesh it
+                                                         v
+                                                   [Mesh output buffers]
+                                                         |  (thread handoff)
+                                                         v
+   [Visibility / culling] -> [Draw lists] <- [Upload to GPU arenas (render thread)]
+                                  |
+                                  v
+                          [Multi-draw submission]
+
+  Rules that never change:
+    R1. Only the render thread touches OpenGL.
+    R2. Workers never touch live world state; they work on snapshots.
+    R3. Per-frame upload work is budgeted so rebuilds cannot cause spikes.
+    R4. Hot paths allocate nothing (no per-block / per-face objects).
+
+
+5. MODULE MAP (VERIFY NAMES AGAINST THE TAG YOU FORK)
+--------------------------------------------------------------------------------
+  Names below are from memory of Sodium's layout and may differ in your version.
+  First task of Phase 0: confirm each one by reading the source, and fix this
+  table.
+
+  Area                     Responsibility                       Likely location
+  -----------------------  -----------------------------------  ---------------
+  Section manager          owns sections, dirty state, frame    render/chunk/
+                           update loop                          RenderSectionManager
+  Build scheduler/executor worker pool, task queue, priorities  render/chunk/compile/executor
+  Meshing task             snapshot -> mesh for one section     render/chunk/compile/tasks
+  Block/fluid mesher       per-block face emission, AO, light   render/chunk/compile/pipeline
+  Vertex format            packed vertex layout                 render/chunk/vertex
+  Occlusion culler         visibility graph / frustum culling   render/chunk/occlusion
+  Region + arenas          GPU buffer storage per region        render/chunk/region, util/arena
+  Draw lists               ordered sections per pass            render/chunk/lists
+  Translucency sorting     sorting for transparent geometry     render/chunk/translucent_sorting
+  Config / options         toggles, video settings              gui/ and config/
+
+
+6. REWRITE TARGETS (HYPOTHESES TO TEST, NOT PROMISES)
+--------------------------------------------------------------------------------
+  Pick ONE at a time. Measure first. Keep it only if it wins on the reference
+  machine.
+
+  PRIORITY ORDER FOR THE LOW-CORE FOCUS: T2, T8, T3, T9, then T1, T4, T5, T6.
+
+  T8. Thread-contention audit (LOW-CORE)
+      Problem: with ~2 physical cores, Minecraft's own threads (client, integrated
+      server, chunk I/O, light engine) plus Sodium workers plus GC plus the GL
+      driver thread all compete. More workers can make things WORSE.
+      Idea: measure what actually runs when, find oversubscription, cap or
+      dynamically scale worker threads, lower worker thread priority, avoid
+      workers running while the render thread is behind its frame budget.
+      Metric: p99 frame time, CPU run-queue length, worker idle/busy ratio.
+
+  T9. Rebuild throttling by frame pressure (LOW-CORE)
+      Problem: a burst of rebuilds steals CPU from the render thread.
+      Idea: feedback loop: if recent frames exceed budget, reduce rebuild
+      throughput; if frames are comfortably fast, allow more. Favor near/visible
+      sections, defer far ones, coalesce repeated dirties of the same section.
+      Metric: frame time stability during block edits and chunk loading.
+
+  T1. Low-end memory profile
+      Problem: 4 GB RAM total; Java heap + off-heap + OS compete.
+      Idea: smaller / tighter pooled mesh buffers, tighter region arena sizing,
+      earlier eviction of far data, options exposing the trade-off.
+      Metric: resident memory, GC pause count/duration, stutter.
+
+  T2. Scheduler tuning for 2-core CPUs
+      Problem: default worker count / priority may oversubscribe 2c/4t.
+      Idea: distance + view-direction priority, cancellation of stale tasks,
+      adaptive worker count, per-frame upload budget tied to measured frame time.
+      Metric: chunk-load stutter while flying, frame time p99.
+
+  T3. Meshing allocation pressure
+      Problem: any per-task garbage shows up as GC hitches on small heaps.
+      Idea: profile allocations in the meshing path, pool/reuse scratch data,
+      flatten data structures.
+      Metric: allocation rate (JFR), GC pauses.
+
+  T4. Occlusion / visibility graph cost
+      Idea: cheaper traversal, smarter early-outs, caching results between
+      frames when the camera has barely moved.
+      Metric: ms per frame in visibility pass.
+
+  T5. Translucency sorting cost
+      Idea: cheaper re-sort triggers, sort only when camera crosses thresholds.
+      Metric: ms per frame, stutter when moving near water/glass.
+
+  T6. GL submission on Mesa / HD 4000
+      Idea: check which multi-draw / indirect extensions are really exposed on
+      this driver and make sure the fast path is the one being used; reduce state
+      changes; batch uploads.
+      Metric: draw-call time, driver CPU time.
+
+  T7. Optional: native kernel swap (ONLY if profiling proves meshing is the
+      bottleneck). Mesher stays behind an interface so this stays possible.
+
+
+7. THREADING MODEL
+--------------------------------------------------------------------------------
+  Render thread : GL calls, draw submission, uploads (budgeted), visibility.
+  Worker pool   : meshing only. Size = measured best for the reference machine
+                  (start with max(1, cores - 2) and tune). Each worker owns its
+                  scratch buffers. No locks inside the meshing loop.
+  Handoff       : lock-free queue from workers to render thread.
+  Cancellation  : a re-dirtied section invalidates in-flight/queued work for it.
+
+
+8. DATA LAYOUT RULES
+--------------------------------------------------------------------------------
+  - Flat primitive arrays for snapshots (block IDs, light) - no object graph.
+  - Mesh output goes straight into pooled off-heap/direct buffers sized up front.
+  - Compact vertex format; keep per-vertex bytes as low as upstream allows
+    (bandwidth is shared with system RAM on integrated graphics).
+  - Prefer index arithmetic over object lookups in inner loops.
+
+
+9. PROFILING AND INSTRUMENTATION (BUILD THIS FIRST)
+--------------------------------------------------------------------------------
+  In-game overlay (toggle key) showing, per frame / rolling average:
+    - frame time (avg, p95, p99)
+    - ms in: visibility, uploads, draw submission, mesh results drained
+    - sections drawn / culled, vertices drawn
+    - rebuild queue depth, tasks/sec, worker utilization
+    - heap used, GC count/time, off-heap/arena usage
+  External tools: JFR for allocation and GC, async-profiler if it works on the
+  machine, Mesa/driver env vars for GL diagnostics, apitrace if needed.
+  Benchmark scenarios (always run the same ones):
+    B1. Stand still in a loaded world, 60 s.
+    B2. Fly in a straight line at fixed speed, 60 s (chunk loading stress).
+    B3. Jungle/forest biome (lots of foliage), stand still.
+    B4. Near water/glass while rotating the camera (translucency).
+  Record results in a table (section 11) with: build, scenario, avg FPS, p99
+  frame time, peak RAM, GC pauses.
+
+
+10. ROADMAP (EACH PHASE ENDS WITH SOMETHING YOU CAN SEE)
+--------------------------------------------------------------------------------
+  Phase 0  Fork builds and runs on 26.2. Overlay shows frame stats.
+           Reward: your own overlay in the game.
+  Phase 1  Baseline benchmarks (B1-B4) on the reference machine, stock fork.
+           Reward: a results table + simple graphs.
+  Phase 2  Feature-flag framework + debug UI toggles per rewrite target.
+           Reward: toggle changes behavior live.
+  Phase 3  First rewrite (pick from T1-T6, likely T2 or T3). A/B vs baseline.
+           Reward: before/after graph.
+  Phase 4  Second rewrite, same process.
+  Phase 5  Cleanup, docs, upstream rebase test onto a newer upstream tag.
+
+
+11. RESULTS LOG (FILL IN)
+--------------------------------------------------------------------------------
+  date | build | scenario | avg FPS | p99 ms | peak RAM | GC pauses | notes
+  -----|-------|----------|---------|--------|----------|-----------|------
+
+
+12. DECISION LOG
+--------------------------------------------------------------------------------
+  - Language: pure Java. Rust/JNI dropped (boundary cost, debugging pain).
+  - Strategy: fork Sodium and rewrite selected areas instead of writing a
+    renderer from scratch. Not trying to beat Sodium overall.
+  - Base: current Sodium, PolyForm Shield 1.0.0 (confirmed from the repo).
+  - Focus: optimize for low-core-count CPUs (T2, T8, T9 first).
+  - OPEN: distribution plan given the Shield noncompete (section 2): private,
+    upstream PRs, ask CaffeineMC, or research/diffs only.
+  - OPEN: confirm GL capabilities of the reference machine's driver (T6).
+
+
+13. RISKS
+--------------------------------------------------------------------------------
+  - License terms of the chosen base (section 2).
+  - Upstream moves fast; large diffs make rebasing painful. Mitigation: small
+    isolated changes behind feature flags.
+  - Minecraft/Sodium internals change between versions; the module map in
+    section 5 may be stale. Mitigation: verify against the exact tag.
+  - Gains may be small. That is acceptable; the measured result is the output.
+================================================================================
+
+Ps: Add these if applicable
+
+1. Hardware Upscaling: Integrated FSR 1 Support
+• Ensure your FSR shader pass triggers after the 3D world is drawn but before the text, crosshair, and inventory menus (HUD) are rendered.
+• Scaling the font and HUD elements with FSR 1 will make text illegible and blocky at lower resolutions. Keep the HUD rendering at your native screen resolution.
+
+2. Optimized Chunk Pipelines: Direct buffer streams, vertex compression, and fast mesh upload
+
+
+
+3. Multi-Draw Indirect (MDI) Fallbacks
+
+Sodium batches draw calls natively, but you can go a step further depending on how you build your buffer streams.
+• The Optimization: Check if Mesa allows your HD 4000 to cleanly execute glMultiDrawElementsBaseVertex. While full hardware Indirect culling is a bad idea (as discussed), batching multiple chunks into a singular Multi-Draw call via a pre-calculated index buffer on the CPU is highly efficient.
+• Why it helps HD 4000: It completely removes the OpenGL API execution overhead. Rather than looping 100 times to draw 100 chunks, you feed the Mesa driver one multi-draw array pointer.
+
+4. Immediate / Geometry Batched Entity Rendering
+
+Standard entities (mobs, items on the ground, players) bypass Sodium's standard chunk pipelines and use standard immediate rendering templates.
+• The Optimization: Look at how the mod ImmediatelyFast operates. You can rewrite the VertexConsumer interface inside your Sodium fork to buffer and batch all non-chunk geometry (mobs, armor layers, particles) into unified arrays, processing them in massive, single-pass draw commands.
+• Why it helps HD 4000: The HD 4000 hates pipeline state changes. Force-batching entities keeps the GPU in a continuous execution loop, minimizing stalls.
+
+5. Smart Leaf / Geometry Topology Culling
+
+Sodium has excellent chunk occlusion culling, but it doesn't modify block face topology logic within the chunk builder itself.
+• The Optimization: Write an engine-level rule into your chunk mesh compiler for translucent or "Fancy" blocks (like Leaves). If a leaf block is entirely enclosed by other leaf blocks, skip generating its internal faces entirely (similar to what Cull Leaves or Smart Leaves do natively, but executed directly during Sodium's geometry extraction phase).
+• Why it helps HD 4000: It cuts down the raw vertex count traveling over your slow system RAM bus before the data ever reaches the GPU.
+
+6. Fragment Shader Micro-Optimizations (Mipmap Bias Tuning)
+
+Standard Sodium uses a generic texture sampling profile. On legacy Intel execution units, texture sampling over large distances can trigger heavy texture cache misses.
+• The Optimization: Inside your custom shader injects, hardcode a slight negative Mipmap LOD bias (e.g., -0.5).
+• Why it helps HD 4000: It subtly forces the GPU to choose lower-resolution texture mipmaps slightly closer to the camera player, drastically reducing texture bandwidth demands on your shared system memory.
