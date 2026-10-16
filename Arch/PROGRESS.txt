@@ -1,7 +1,7 @@
 ALTIUM — ARCHITECTURE EXPERIMENTS PROGRESS
 Branch: arch-experiments
 Base: CaffeineMC/Sodium tag mc26.2-0.9.2
-Status: Altium branding and independent versioning committed; current low-core worker-priority experiment is awaiting CI and A/B testing.
+Status: Altium branding and independent versioning committed; current low-core worker-priority experiment awaits A/B testing. Scope is renderer/chunk delivery; vanilla tick optimization is a separate possible Lithium fork.
 Last updated: 2026-10-15
 
 PURPOSE
@@ -32,10 +32,18 @@ CHECKPOINTS
 
 EXPERIMENT ORDER
 1. Low-core worker priority experiment: on systems with <=4 logical processors, raise chunk-worker priority one level (NORM-2 -> NORM-1). Hypothesis: slightly reduce chunk completion delay; risk: increased CPU contention. Not validated until A/B testing.
-2. Thread contention / worker sizing on low-core CPUs.
-3. Rebuild scheduling under frame-time pressure.
+2. Thread contention / worker sizing on low-core CPUs, balancing chunk delivery against render responsiveness.
+3. Rebuild scheduling under frame-time pressure, preserving near-camera priority.
 4. Meshing allocation pressure.
 5. Memory profile, then other renderer targets guided by measurements.
+
+SCOPE BOUNDARY
+- Altium's implementation work stays focused on the renderer and chunk delivery.
+- Tick timings remain a useful regression signal, but we will not fold broad vanilla
+  game-logic/world-generation rewrites into Altium.
+- A separate future project could fork/adapt Lithium to optimize supported vanilla
+  logic and ticking paths. Treat that as a separate codebase and benchmark effort;
+  Lithium cannot be assumed to fix every structure-generation spike.
 
 WORKING RULES
 1. One experiment per commit or small series of commits.
