@@ -11,7 +11,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.jspecify.annotations.Nullable;
 
 public class SodiumDebugEntry implements DebugScreenEntry {
-    private static final Identifier DEBUG_GROUP = Identifier.fromNamespaceAndPath("sodium", "debug_group");
+    private static final Identifier DEBUG_GROUP = Identifier.fromNamespaceAndPath("altium", "debug_group");
     private final boolean verbose;
 
     public SodiumDebugEntry(boolean verbose) {
@@ -35,7 +35,7 @@ public class SodiumDebugEntry implements DebugScreenEntry {
 
     @Override
     public void display(DebugScreenDisplayer debugScreenDisplayer, @Nullable Level level, @Nullable LevelChunk levelChunk, @Nullable LevelChunk levelChunk2) {
-        debugScreenDisplayer.addToGroup(DEBUG_GROUP, "%sSodium Renderer (%s)".formatted(getVersionColor(), SodiumClientMod.getVersion()));
+        debugScreenDisplayer.addToGroup(DEBUG_GROUP, "%sAltium Renderer (%s)".formatted(getVersionColor(), SodiumClientMod.getVersion()));
 
         var renderer = SodiumWorldRenderer.instanceNullable();
 
