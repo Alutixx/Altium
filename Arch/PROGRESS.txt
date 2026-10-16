@@ -27,15 +27,18 @@ CHECKPOINTS
 - [ ] Confirm corrected CI artifact upload produces a downloadable Altium JAR.
 - [x] Launch-tested the pre-branding Fabric 26.2 baseline: 6-chunk walking loads quickly, with slight visible delay.
 - [ ] Launch-test the branded Altium JAR and verify manager name/version.
+- [x] Replace the visible Sodium renderer title and debug-group namespace in the F3 debug menu with Altium.
+- [x] Replace the explicit Sodium logger/category and user-facing startup messages in the mixin plugin with Altium.
 - [ ] Record a repeatable stock baseline on the Dell Latitude E5430.
 - [ ] Add low-overhead instrumentation before renderer rewrites.
 
 EXPERIMENT ORDER
-1. Low-core worker priority experiment: on systems with <=4 logical processors, raise chunk-worker priority one level (NORM-2 -> NORM-1). Hypothesis: slightly reduce chunk completion delay; risk: increased CPU contention. Not validated until A/B testing.
-2. Thread contention / worker sizing on low-core CPUs, balancing chunk delivery against render responsiveness.
-3. Rebuild scheduling under frame-time pressure, preserving near-camera priority.
-4. Meshing allocation pressure.
-5. Memory profile, then other renderer targets guided by measurements.
+1. Audit remaining renderer hot paths and existing counters before changing behavior; choose one optimization with a measurable hypothesis.
+2. Low-core worker priority experiment: on systems with <=4 logical processors, raise chunk-worker priority one level (NORM-2 -> NORM-1). Hypothesis: slightly reduce chunk completion delay; risk: increased CPU contention. Not validated until A/B testing.
+3. Thread contention / worker sizing on low-core CPUs, balancing chunk delivery against render responsiveness.
+4. Rebuild scheduling under frame-time pressure, preserving near-camera priority.
+5. Meshing allocation pressure.
+6. Memory profile, then other renderer targets guided by measurements.
 
 SCOPE BOUNDARY
 - Altium's implementation work stays focused on the renderer and chunk delivery.
@@ -86,3 +89,9 @@ NEXT INVESTIGATION
    appearance. Do not blindly add worker threads or raise priorities further on
    the 2c/4t reference CPU.
 
+
+
+BRANDING FIXES (2026-10-15)
+- F3 debug renderer label now says Altium Renderer and uses the altium debug-group namespace.
+- The mixin plugin's explicit logger category and startup/error messages now say Altium.
+- Java package names, mixin config filenames, translation-key namespaces, and other internal compatibility identifiers still retain sodium names intentionally for now; changing those wholesale is a separate migration and can break mod integrations or existing configs.
