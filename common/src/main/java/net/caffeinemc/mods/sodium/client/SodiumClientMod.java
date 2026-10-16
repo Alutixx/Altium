@@ -64,8 +64,8 @@ public class SodiumClientMod {
         try {
             return SodiumOptions.loadFromDisk();
         } catch (Exception e) {
-            LOGGER.error("Failed to load configuration file", e);
-            LOGGER.error("Using default configuration file in read-only mode");
+            LOGGER.error("Failed to load Altium configuration file", e);
+            LOGGER.error("Using default Altium configuration in read-only mode");
 
             Console.instance().logMessage(MessageLevel.SEVERE, "sodium.console.config_not_loaded", true, 12.5);
 
@@ -82,7 +82,7 @@ public class SodiumClientMod {
         try {
             SodiumOptions.writeToDisk(OPTIONS);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to write config file", e);
+            throw new RuntimeException("Failed to write Altium config file", e);
         }
     }
 

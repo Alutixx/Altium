@@ -20,6 +20,6 @@ public class ConfigLoaderFabric {
             ConfigManager.registerConfigEntryPoint(container::getEntrypoint, container.getProvider().getMetadata().getId());
         }
 
-        ConfigManager.registerConfigEntryPoint(SodiumConfigBuilder::new, "sodium");
+        ConfigManager.registerConfigEntryPoint(SodiumConfigBuilder::new, "altium");
     }
 }
