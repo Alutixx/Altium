@@ -18,11 +18,11 @@ import java.io.IOException;
 
 public class SodiumClientMod {
     private static SodiumOptions OPTIONS;
-    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
-    public static final Identifier SODIUM_DEBUG_ENTRY_FULL = Identifier.fromNamespaceAndPath("sodium", "debug_full");
-    public static final Identifier SODIUM_DEBUG_ENTRY_REDUCED = Identifier.fromNamespaceAndPath("sodium", "debug_reduced");
-    public static final Identifier SODIUM_DEBUG_ENTRY_BUFFER_ARENA = Identifier.fromNamespaceAndPath("sodium", "buffer_arena");
-    public static final Identifier SODIUM_FPS_PERCENTILES = Identifier.fromNamespaceAndPath("sodium", "fps_percentiles");
+    private static final Logger LOGGER = LoggerFactory.getLogger("Altium");
+    public static final Identifier SODIUM_DEBUG_ENTRY_FULL = Identifier.fromNamespaceAndPath("altium", "debug_full");
+    public static final Identifier SODIUM_DEBUG_ENTRY_REDUCED = Identifier.fromNamespaceAndPath("altium", "debug_reduced");
+    public static final Identifier SODIUM_DEBUG_ENTRY_BUFFER_ARENA = Identifier.fromNamespaceAndPath("altium", "buffer_arena");
+    public static final Identifier SODIUM_FPS_PERCENTILES = Identifier.fromNamespaceAndPath("altium", "fps_percentiles");
 
     private static String MOD_VERSION;
 

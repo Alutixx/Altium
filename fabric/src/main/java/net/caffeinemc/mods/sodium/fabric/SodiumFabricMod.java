@@ -15,7 +15,7 @@ public class SodiumFabricMod implements ClientModInitializer {
     @SuppressWarnings("unchecked")
     public void onInitializeClient() {
         ModContainer mod = FabricLoader.getInstance()
-                .getModContainer("sodium")
+                .getModContainer("altium")
                 .orElseThrow(NullPointerException::new);
 
         SodiumClientMod.onInitialization(mod.getMetadata().getVersion().getFriendlyString());

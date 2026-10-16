@@ -2,23 +2,20 @@ import org.gradle.api.Project
 
 object BuildConfig {
     val MINECRAFT_VERSION: String = "26.2"
-    val NEOFORGE_VERSION: String = "26.2.0.88"
     val FABRIC_LOADER_VERSION: String = "0.19.3"
     val FABRIC_API_VERSION: String = "0.161.0+26.2"
     val SUPPORT_FRAPI : Boolean = true
 
     // https://semver.org/
-    val MOD_VERSION: String = "0.9.2"
+    val MOD_VERSION: String = "0.1.0"
 
     val MINECRAFT_VERSION_SHORT: String = MINECRAFT_VERSION
             .replace("-snapshot-", "s")
             .replace("-pre-", "p")
             .replace("-rc-", "r")
 
-    val RELEASE_TAG: String = "mc$MINECRAFT_VERSION_SHORT-$MOD_VERSION"
+    val RELEASE_TAG: String = "altium-$MOD_VERSION-mc$MINECRAFT_VERSION_SHORT"
 
-    val CURSEFORGE_PROJECT_ID = "394468"
-    val MODRINTH_PROJECT_ID = "AANobbMI"
 
     fun createVersionString(project: Project): String {
         val builder = StringBuilder()

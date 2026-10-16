@@ -1,4 +1,4 @@
-name: Altium architecture experiments
+name: Altium Fabric 26.2
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build Fabric and NeoForge artifacts
+    name: Build Fabric artifact
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -37,16 +37,14 @@ jobs:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Build all modules
-        run: ./gradlew build --no-daemon
+        run: ./gradlew :fabric:build --no-daemon
 
       - name: Upload mod JARs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: altium-arch-${{ github.sha }}
+          name: altium-fabric-${{ github.sha }}
           path: |
-            build/mods/*.jar
             fabric/build/libs/*.jar
-            neoforge/build/libs/*.jar
           if-no-files-found: warn
           retention-days: 14
