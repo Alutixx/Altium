@@ -29,10 +29,11 @@ CHECKPOINTS
 - [ ] Add low-overhead instrumentation before renderer rewrites.
 
 EXPERIMENT ORDER
-1. Thread contention / worker sizing on low-core CPUs.
-2. Rebuild scheduling under frame-time pressure.
-3. Meshing allocation pressure.
-4. Memory profile, then other renderer targets guided by measurements.
+1. Low-core worker priority experiment: on systems with <=4 logical processors, raise chunk-worker priority one level (NORM-2 -> NORM-1). Hypothesis: slightly reduce chunk completion delay; risk: increased CPU contention. Not validated until A/B testing.
+2. Thread contention / worker sizing on low-core CPUs.
+3. Rebuild scheduling under frame-time pressure.
+4. Meshing allocation pressure.
+5. Memory profile, then other renderer targets guided by measurements.
 
 WORKING RULES
 1. One experiment per commit or small series of commits.

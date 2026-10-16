@@ -35,7 +35,10 @@ public class ChunkBuilder {
             WorkerRunnable worker = new WorkerRunnable("Chunk Render Task Executor #" + i, context);
 
             Thread thread = new Thread(worker, "Chunk Render Task Executor #" + i);
-            thread.setPriority(Math.max(0, Thread.NORM_PRIORITY - 2));
+            // On low-core systems, give chunk meshing a little more scheduling opportunity.
+            // This is an experiment: measure frame pacing and chunk latency before keeping it.
+            int priorityOffset = getMaxThreadCount() <= 4 ? 1 : 2;
+            thread.setPriority(Math.max(Thread.MIN_PRIORITY, Thread.NORM_PRIORITY - priorityOffset));
             thread.start();
 
             this.threads.add(thread);
