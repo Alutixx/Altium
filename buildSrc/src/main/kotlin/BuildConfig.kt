@@ -2,7 +2,7 @@ import org.gradle.api.Project
 
 object BuildConfig {
     val MINECRAFT_VERSION: String = "26.2"
-    val NEOFORGE_VERSION: String = "26.3.0.65-beta"
+    val NEOFORGE_VERSION: String = "26.2.0.87"
     val FABRIC_LOADER_VERSION: String = "0.19.3"
     val FABRIC_API_VERSION: String = "0.161.0+26.2"
     val SUPPORT_FRAPI : Boolean = true
