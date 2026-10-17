@@ -18,7 +18,7 @@ import java.io.IOException;
 
 public class SodiumClientMod {
     private static SodiumOptions OPTIONS;
-    private static final Logger LOGGER = LoggerFactory.getLogger("Sodium");
+    private static final Logger LOGGER = LoggerFactory.getLogger("Altium");
     public static final Identifier SODIUM_DEBUG_ENTRY_FULL = Identifier.fromNamespaceAndPath("sodium", "debug_full");
     public static final Identifier SODIUM_DEBUG_ENTRY_REDUCED = Identifier.fromNamespaceAndPath("sodium", "debug_reduced");
     public static final Identifier SODIUM_DEBUG_ENTRY_BUFFER_ARENA = Identifier.fromNamespaceAndPath("sodium", "buffer_arena");
