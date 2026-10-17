@@ -1,6 +1,6 @@
 # Used when a commit is pushed to the repository
 # This makes use of caching for faster builds and uploads the resulting artifacts
-name: build-commit-nopublish
+name: Altium Fabric prototype build
 
 on:
   push:
@@ -33,10 +33,10 @@ jobs:
           cache-read-only: false
 
       - name: Execute Gradle build
-        run: ./gradlew build
+        run: ./gradlew :fabric:jar
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: sodium-artifacts-${{ steps.ref.outputs.branch }}
-          path: build/mods/*.jar
+          name: altium-fabric-${{ steps.ref.outputs.branch }}
+          path: build/mods/altium-fabric*.jar
