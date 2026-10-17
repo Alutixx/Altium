@@ -5,7 +5,7 @@ plugins {
 }
 
 base {
-    archivesName = "sodium-fabric"
+    archivesName = "altium-fabric"
 }
 
 val configurationApiModJava: Configuration = configurations.create("apiJava") {
