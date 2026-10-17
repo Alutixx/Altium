@@ -1,21 +1,21 @@
 import org.gradle.api.Project
 
 object BuildConfig {
-    val MINECRAFT_VERSION: String = "26.3"
+    val MINECRAFT_VERSION: String = "26.2"
     val NEOFORGE_VERSION: String = "26.3.0.65-beta"
     val FABRIC_LOADER_VERSION: String = "0.19.3"
-    val FABRIC_API_VERSION: String = "0.160.5+26.3"
+    val FABRIC_API_VERSION: String = "0.161.0+26.2"
     val SUPPORT_FRAPI : Boolean = true
 
     // https://semver.org/
-    val MOD_VERSION: String = "0.9.3-beta.1"
+    val MOD_VERSION: String = "0.1.0-alpha.1"
 
     val MINECRAFT_VERSION_SHORT: String = MINECRAFT_VERSION
             .replace("-snapshot-", "s")
             .replace("-pre-", "p")
             .replace("-rc-", "r")
 
-    val RELEASE_TAG: String = "mc$MINECRAFT_VERSION_SHORT-$MOD_VERSION"
+    val RELEASE_TAG: String = "altium-mc$MINECRAFT_VERSION_SHORT-$MOD_VERSION"
 
     val CURSEFORGE_PROJECT_ID = "394468"
     val MODRINTH_PROJECT_ID = "AANobbMI"
@@ -29,7 +29,7 @@ object BuildConfig {
         if (isReleaseBuild) {
             builder.append(MOD_VERSION)
         } else {
-            builder.append(MOD_VERSION.substringBefore('-'))
+            builder.append(MOD_VERSION)
             builder.append("-SNAPSHOT")
         }
 
@@ -61,5 +61,5 @@ object BuildConfig {
             .trim()
             .replace("[ReleaseTag]()", RELEASE_TAG)
             .replace("[MCVersion]()", MINECRAFT_VERSION)
-            .replace("[SodiumVersion]()", MOD_VERSION)
+            .replace("[AltiumVersion]()", MOD_VERSION)
 }
