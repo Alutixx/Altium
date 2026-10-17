@@ -1,8 +1,8 @@
 {
   "schemaVersion" : 1,
-  "id" : "sodium",
+  "id" : "altium",
   "version" : "${version}",
-  "name" : "Sodium",
+  "name" : "Altium",
   "description" : "Sodium is a powerful rendering engine for Minecraft which greatly improves frame rates and micro-stutter, while fixing many graphical issues",
   "authors" : [
     {
@@ -38,7 +38,7 @@
     "muzikbike"
   ],
   "contact" : {
-    "homepage" : "https://github.com/CaffeineMC/sodium",
+    "homepage" : "https://github.com/Alutixx/Altium",
     "sources" : "https://github.com/CaffeineMC/sodium",
     "issues" : "https://github.com/CaffeineMC/sodium/issues"
   },
@@ -61,7 +61,7 @@
         "modmenu.discord" : "https://caffeinemc.net/discord",
         "modmenu.github_releases" : "https://github.com/CaffeineMC/sodium/releases",
         "modmenu.kofi" : "https://caffeinemc.net/donate",
-        "modmenu.modrinth" : "https://modrinth.com/mod/sodium"
+        "modmenu.modrinth" : "https://github.com/Alutixx/Altium/releases"
       }
     }
   },
